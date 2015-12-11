@@ -39,17 +39,40 @@ def getFrequencyDiff(string):
 
   return diff
 
-def decode(string):
+def byteXOREncrypt( string, key ):
+  result = ""
+  for j in xrange( 0, len(string), 2 ):
+    #print string[j:j+2], int(string[j:j+2],16)
+    #print int(string[j:j+2],16)^i
+    result += chr(int(string[j:j+2],16)^key  )
+
+  return result
+
+def byteXOREncryptHex( string, key ):
+  result = ""
+  for j in xrange( 0, len(string), 2 ):
+    #print string[j:j+2], int(string[j:j+2],16)
+    #print int(string[j:j+2],16)^i
+    result += hex(int(string[j:j+2],16)^key)[2:].ljust(2,'0')
+
+  return result
+
+def byteXOREncrypt2( string, key ):
+  result = ""
+  for j in xrange( 0, len(string) ):
+    #print string[j:j+2], int(string[j:j+2],16)
+    #print int(string[j:j+2],16)^i
+    result += chr(ord(string[j:j+1])^key)
+
+  return result
+
+def decodeByteXOR(string):
   bestDiff = 99999
   bestDiffString = 0
 
   for i in xrange( 0, 2**8 ):
     #print "i=",i
-    hexDecodedString = ""
-    for j in xrange( 0, len(string), 2 ):
-      #print string[j:j+2], int(string[j:j+2],16)
-      #print int(string[j:j+2],16)^i
-      hexDecodedString += chr(int(string[j:j+2],16)^i  )
+    hexDecodedString = byteXOREncrypt( string, i )
     #print hexDecodedString
     #decodedString = binascii.unhexlify( hexDecodedString[2:-1] )
     #print decodedString
@@ -58,6 +81,50 @@ def decode(string):
       bestDiff = diff
       bestDiffString = hexDecodedString
 
-  print bestDiffString
-  return bestDiffString
+  #print bestDiffString
+  return ( bestDiff, bestDiffString )
       
+def findBestXOREncodedString( strings ):
+  best = ( ( 99999, "" ), "" )
+  for string in strings:
+    string = string.strip()
+    decoded = decodeByteXOR(string)
+    if ( best[0][0] > decoded[0] ):
+      best = ( decoded, string )
+
+  return best
+
+def hexEncode( string ):
+  return "".join( [hex(ord(x))[2:].rjust(2, '0') for x in string] )
+
+def hexDecode( string ):
+  result = ""
+  for j in xrange( 0, len(string), 2 ):
+    result += chr(int(string[j:j+2],16))
+  return result
+
+def encryptRepeatingKeyXOR( string, key ):
+  streams = [string[i::len(key)] for i in xrange(0,len(key))]
+  streams = [byteXOREncryptHex(streams[i], ord(key[i])) for i in xrange(0,len(key))]
+  result = ""
+  for i in xrange( 0, len(streams[0])):
+    for j in len(streams):
+      if i < len(streams[j]):
+        result += streams[j][i]
+
+  return result
+
+def encryptRepeatingKeyXOR2( string, key ):
+  streams = [string[i::len(key)] for i in xrange(0,len(key))]
+  result = [byteXOREncrypt2(streams[i], ord(key[i])) for i in xrange(0,len(key))]
+  print hexEncode(streams[0]), hexEncode(streams[1]), hexEncode(streams[2])
+  result = ""
+  for i in xrange( 0, len(streams[0])):
+    for j in streams:
+      if i < len(j):
+        result += j[i]
+  return result
+
+s = "Burning 'em, if you ain't quick and nimble\nI go crazy when I hear a cymbal"
+s = encryptRepeatingKeyXOR2( s, "ICE" )
+print s, hexEncode(s)
