@@ -97,34 +97,21 @@ def findBestXOREncodedString( strings ):
 def hexEncode( string ):
   return "".join( [hex(ord(x))[2:].rjust(2, '0') for x in string] )
 
+def hexEncodeBA( ba ):
+  return "".join( [hex(x)[2:].rjust(2, '0') for x in ba] )
+
 def hexDecode( string ):
   result = ""
   for j in xrange( 0, len(string), 2 ):
     result += chr(int(string[j:j+2],16))
   return result
 
-def encryptRepeatingKeyXOR( string, key ):
-  streams = [string[i::len(key)] for i in xrange(0,len(key))]
-  streams = [byteXOREncryptHex(streams[i], ord(key[i])) for i in xrange(0,len(key))]
-  result = ""
-  for i in xrange( 0, len(streams[0])):
-    for j in len(streams):
-      if i < len(streams[j]):
-        result += streams[j][i]
-
-  return result
-
-def encryptRepeatingKeyXOR2( string, key ):
-  streams = [string[i::len(key)] for i in xrange(0,len(key))]
-  result = [byteXOREncrypt2(streams[i], ord(key[i])) for i in xrange(0,len(key))]
-  print hexEncode(streams[0]), hexEncode(streams[1]), hexEncode(streams[2])
-  result = ""
-  for i in xrange( 0, len(streams[0])):
-    for j in streams:
-      if i < len(j):
-        result += j[i]
-  return result
-
-s = "Burning 'em, if you ain't quick and nimble\nI go crazy when I hear a cymbal"
-s = encryptRepeatingKeyXOR2( s, "ICE" )
-print s, hexEncode(s)
+def encryptRepeatingKeyXOR3( string, key ):
+  ba = bytearray( string )
+  kba = bytearray(key)
+  for i in xrange( 0, len(ba), len(kba) ):
+    for j in xrange( 0, len(kba) ):
+      index = i+j
+      if ( index < len(ba) ):
+        ba[index] ^= kba[j]
+  return ba
