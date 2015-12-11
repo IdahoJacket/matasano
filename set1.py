@@ -66,9 +66,25 @@ def byteXOREncrypt2( string, key ):
 
   return result
 
+def decodeByteXOR2(string):
+  bestDiff = 99999
+  bestDiffString = 0
+  bestKey = 0
+
+  for i in xrange( 0, 2**8 ):
+    hexDecodedString = byteXOREncrypt2( string, i )
+    diff = getFrequencyDiff( hexDecodedString.upper() )
+    if diff < bestDiff:
+      bestDiff = diff
+      bestDiffString = hexDecodedString
+      bestKey = i
+
+  return ( bestDiff, bestDiffString, bestKey )
+      
 def decodeByteXOR(string):
   bestDiff = 99999
   bestDiffString = 0
+  bestKey = 0
 
   for i in xrange( 0, 2**8 ):
     #print "i=",i
@@ -80,9 +96,10 @@ def decodeByteXOR(string):
     if diff < bestDiff:
       bestDiff = diff
       bestDiffString = hexDecodedString
+      bestKey = i
 
   #print bestDiffString
-  return ( bestDiff, bestDiffString )
+  return ( bestDiff, bestDiffString, bestKey )
       
 def findBestXOREncodedString( strings ):
   best = ( ( 99999, "" ), "" )
@@ -115,3 +132,42 @@ def encryptRepeatingKeyXOR3( string, key ):
       if ( index < len(ba) ):
         ba[index] ^= kba[j]
   return ba
+
+def hammingDistance( ba1, ba2 ):
+  dist = 0
+  for x in zip(ba1,ba2):
+    diff = x[0] ^ x[1]
+    dist += bin(diff).count("1")
+  return dist
+
+assert hammingDistance( bytearray('this is a test'), bytearray('wokka wokka!!!') ) == 37
+
+def findKeySize( string, a, b ):
+  ba = bytearray(string)
+  diffs = []
+  for i in xrange( a, b ):
+    diff = 0
+    
+    reps = 4
+    for j in xrange( 0, reps*i, i ):
+      diff += hammingDistance( ba[j:j+i], ba[j+i:j+i+i] )
+    diffs.append( ( diff / (reps * float(i)), i ) )
+  return sorted( diffs, key=lambda t:t[0] )
+
+
+def breakXOR( string, keySize ):
+  ba = bytearray(string)
+  blocks = [ba[i::keySize] for i in xrange(0, keySize)]
+  decoded = []
+  for b in blocks:
+    decoded.append(decodeByteXOR2(b))
+  result = ""
+  for i in xrange( 0, len(decoded[0][1] ) ):
+    for j in decoded:
+      if ( i < len(j[1]) ):
+        result += j[1][i]
+  key = ""
+  for j in decoded:
+    key += chr( j[2] )
+  return ( keySize, key, result )
+
