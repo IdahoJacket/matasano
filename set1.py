@@ -1,5 +1,6 @@
 import binascii
 import itertools
+from Crypto.Cipher import AES
 
 def myHexToBase64( string ):
   table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
@@ -171,3 +172,42 @@ def breakXOR( string, keySize ):
     key += chr( j[2] )
   return ( keySize, key, result )
 
+def decryptAES( string, key ):
+   c = AES.new(key, AES.MODE_ECB)
+   return c.decrypt( string )
+
+def getECBBlocks( ba ):
+  return [ba[i:i+16] for i in xrange(0, len(ba), 16)]
+
+def challenge7():
+  string = ""
+  while True:
+    try:
+      string += raw_input()
+    except:
+      break
+  print decryptAES( binascii.a2b_base64(string), 'YELLOW SUBMARINE' )
+
+def challenge8():
+  ecbString = open('7.txt').read()
+  f = open('8.txt')
+  sampleStrings = f.readlines()
+
+  ecbBlocks = getECBBlocks( bytearray(binascii.a2b_base64(ecbString)) )
+  scores = []
+  
+  for sampleString in sampleStrings:
+    foundCount = 0
+    sampleString = sampleString.strip()
+    sampleBlocks = getECBBlocks( bytearray(binascii.unhexlify(sampleString)) )
+    for sampleBlock in sampleBlocks:
+      if sampleBlock in ecbBlocks:
+        foundCount += 1
+      foundCount += sampleBlocks.count(sampleBlock)
+    scores.append( ( foundCount, sampleString ) )
+
+  string = sorted( scores, key=lambda x: x[0], reverse = True )[0][1]
+  print string
+  print sorted(getECBBlocks( bytearray(binascii.unhexlify(string)) ) )
+  
+challenge8()
